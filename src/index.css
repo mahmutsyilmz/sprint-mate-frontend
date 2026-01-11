@@ -1,0 +1,80 @@
+@import "tailwindcss";
+
+/* Sprint Mate IDE Theme - Extracted from design files */
+@theme {
+  /* IDE Color Palette */
+  --color-ide-bg: #1e1e1e;
+  --color-ide-panel: #252526;
+  --color-ide-border: #3e3e42;
+  --color-ide-blue: #007acc;
+  --color-primary: #52fa7c;
+  --color-github-dark: #24292e;
+  
+  /* Syntax highlighting colors */
+  --color-syntax-purple: #c586c0;
+  --color-syntax-blue: #4fc1ff;
+  --color-syntax-yellow: #dcdcaa;
+  --color-syntax-gray: #858585;
+  --color-syntax-comment: #6a9955;
+  
+  /* Font families */
+  --font-display: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  /* Custom border radius (tighter for IDE aesthetic) */
+  --radius-sm: 0.125rem;
+  --radius-DEFAULT: 0.125rem;
+  --radius-md: 0.25rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap');
+
+/* Blinking cursor animation */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-cursor {
+  animation: blink 1s step-end infinite;
+}
+
+/* Custom scrollbar for raw IDE aesthetic */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3e3e42;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #52fa7c;
+}
+
+/* Base styles */
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background-color: #1e1e1e;
+  color: white;
+  font-family: "JetBrains Mono", monospace;
+}
+
+/* Selection styling */
+::selection {
+  background-color: #52fa7c;
+  color: black;
+}
