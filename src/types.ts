@@ -7,12 +7,14 @@ export interface User {
   surname: string | null;
   role: 'FRONTEND' | 'BACKEND' | null;
   bio: string | null;
+  skills: string[];
 }
 
 export interface UserUpdateRequest {
   name: string;
   bio?: string | null;
   role?: 'FRONTEND' | 'BACKEND' | null;
+  skills?: string[];
 }
 
 export interface MatchStatus {
@@ -21,6 +23,7 @@ export interface MatchStatus {
   meetingUrl: string | null;
   partnerName: string | null;
   partnerRole: string | null;
+  partnerSkills: string[] | null;
   projectTitle: string | null;
   projectDescription: string | null;
   waitingSince: string | null;

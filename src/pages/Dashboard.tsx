@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { matchService } from '../services/matchService';
 import { useAuth } from '../contexts';
-import { TerminalPanel, EditProfileModal, type TerminalLog } from '../components';
+import { TerminalPanel, EditProfileModal, SkillsList, type TerminalLog } from '../components';
 import type { MatchStatus } from '../types';
 
 type DashboardState = 'IDLE' | 'WAITING' | 'MATCHED';
@@ -399,6 +399,7 @@ export function Dashboard() {
                   description={matchStatus.projectDescription || ''}
                   partnerName={matchStatus.partnerName || ''}
                   partnerRole={matchStatus.partnerRole || ''}
+                  partnerSkills={matchStatus.partnerSkills || []}
                   meetingUrl={matchStatus.meetingUrl || ''}
                   onComplete={handleCompleteSprint}
                   isLoading={isLoading}
@@ -501,6 +502,45 @@ function WelcomeView({
         </div>
       </div>
 
+      {/* User Profile Card */}
+      <div className="bg-ide-panel border border-ide-border rounded-lg p-6 mb-6">
+        <div className="flex items-start gap-4 mb-4">
+          {/* Avatar */}
+          <div className="w-14 h-14 rounded-full bg-primary/20 border-2 border-primary/50 flex items-center justify-center flex-shrink-0">
+            <span className="text-primary text-xl font-bold">
+              {user?.name?.charAt(0).toUpperCase() || 'U'}
+            </span>
+          </div>
+          
+          {/* User Info */}
+          <div className="flex-1 min-w-0">
+            <h2 className="text-lg font-bold text-white truncate">{user?.name || 'Developer'}</h2>
+            <p className="text-syntax-gray text-sm truncate">{user?.bio || 'No bio set'}</p>
+            <div className="flex items-center gap-2 mt-1">
+              <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                user?.role === 'FRONTEND' 
+                  ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                  : user?.role === 'BACKEND'
+                  ? 'bg-green-500/20 text-green-400 border border-green-500/30'
+                  : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+              }`}>
+                {user?.role || 'No Role'}
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Skills Section */}
+        <div className="border-t border-ide-border pt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="material-symbols-outlined text-[14px] text-syntax-blue">code</span>
+            <span className="text-[11px] text-[#bbbbbb] uppercase tracking-wide font-display">Tech Stack</span>
+          </div>
+          <SkillsList skills={user?.skills || []} variant="default" maxDisplay={8} />
+        </div>
+      </div>
+
+      {/* Quick Start Guide */}
       <div className="bg-ide-panel border border-ide-border rounded-lg p-6 mb-6">
         <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
           <span className="material-symbols-outlined text-primary">rocket_launch</span>
@@ -571,6 +611,7 @@ function ProjectReadme({
   description, 
   partnerName, 
   partnerRole,
+  partnerSkills,
   meetingUrl,
   onComplete,
   isLoading 
@@ -579,6 +620,7 @@ function ProjectReadme({
   description: string;
   partnerName: string;
   partnerRole: string;
+  partnerSkills: string[];
   meetingUrl: string;
   onComplete: () => void;
   isLoading: boolean;
@@ -596,19 +638,44 @@ function ProjectReadme({
 
       {/* Partner Info Card */}
       <div className="bg-primary/10 border border-primary/30 rounded-lg p-4 mb-6">
-        <div className="flex items-center gap-3">
-          <span className="material-symbols-outlined text-[32px] text-primary">group</span>
-          <div>
-            <p className="text-primary font-bold m-0">Your Partner</p>
-            <p className="text-white m-0">@{partnerName} <span className="text-syntax-gray">({partnerRole})</span></p>
+        <div className="flex items-start gap-3">
+          {/* Partner Avatar */}
+          <div className="w-12 h-12 rounded-full bg-syntax-blue/20 border-2 border-syntax-blue/50 flex items-center justify-center flex-shrink-0">
+            <span className="text-syntax-blue text-lg font-bold">
+              {partnerName?.charAt(0).toUpperCase() || 'P'}
+            </span>
+          </div>
+          
+          <div className="flex-1">
+            <p className="text-primary font-bold m-0 text-sm">Your Partner</p>
+            <p className="text-white m-0 text-lg font-bold">@{partnerName}</p>
+            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold mt-1 ${
+              partnerRole === 'FRONTEND' 
+                ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' 
+                : 'bg-green-500/20 text-green-400 border border-green-500/30'
+            }`}>
+              {partnerRole}
+            </span>
+            
+            {/* Partner Skills */}
+            {partnerSkills && partnerSkills.length > 0 && (
+              <div className="mt-3">
+                <div className="flex items-center gap-1.5 mb-1.5">
+                  <span className="material-symbols-outlined text-[12px] text-syntax-blue">code</span>
+                  <span className="text-[10px] text-[#bbbbbb] uppercase tracking-wide">Tech Stack</span>
+                </div>
+                <SkillsList skills={partnerSkills} variant="partner" maxDisplay={6} />
+              </div>
+            )}
           </div>
         </div>
+        
         {meetingUrl && (
           <a 
             href={meetingUrl} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="mt-3 inline-flex items-center gap-2 px-4 py-2 bg-ide-blue text-white rounded hover:bg-blue-600 transition-colors no-underline"
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-ide-blue text-white rounded hover:bg-blue-600 transition-colors no-underline"
           >
             <span className="material-symbols-outlined text-[18px]">videocam</span>
             Join Meeting

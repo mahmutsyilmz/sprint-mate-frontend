@@ -20,7 +20,8 @@ export const userService = {
   },
 
   /**
-   * Updates the current user's profile (name, bio, optionally role).
+   * Updates the current user's profile (name, bio, skills, optionally role).
+   * Skills are used for AI-powered project matching.
    */
   updateProfile: async (data: UserUpdateRequest): Promise<User> => {
     const response = await api.put<User>('/users/me', data);
