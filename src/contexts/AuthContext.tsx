@@ -1,5 +1,4 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { userService } from '../services/userService';
 import type { User } from '../types';
 
@@ -7,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<User | null>;
   logout: () => void;
 }
 
@@ -17,7 +16,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
  * Loading spinner styled as a compilation progress bar.
  * VS Code-inspired aesthetic.
  */
-function LoadingScreen() {
+export function LoadingScreen() {
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('Initializing...');
 
@@ -126,65 +125,41 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const navigate = useNavigate();
-  const location = useLocation();
 
-  const refreshUser = async () => {
+  const refreshUser = async (): Promise<User | null> => {
     try {
       const userData = await userService.getMe();
       setUser(userData);
       return userData;
     } catch {
       setUser(null);
-      throw new Error('Failed to fetch user');
+      return null;
     }
   };
 
   const logout = () => {
     // Clear local state and redirect to backend logout
     setUser(null);
-    window.location.href = 'http://localhost:8080/logout';
+    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
+    window.location.href = `${backendUrl}/logout`;
   };
 
   // Check authentication on mount
   useEffect(() => {
     const checkAuth = async () => {
-      // Don't check auth if we're on the login page
-      if (location.pathname === '/login') {
-        setIsLoading(false);
-        return;
-      }
-
       try {
         const userData = await userService.getMe();
         setUser(userData);
-
-        // Redirect based on role
-        if (userData.role === null) {
-          // User needs to select a role
-          if (location.pathname !== '/role-select') {
-            navigate('/role-select', { replace: true });
-          }
-        } else {
-          // User has a role, go to dashboard
-          if (location.pathname === '/role-select') {
-            navigate('/dashboard', { replace: true });
-          } else if (location.pathname === '/' || location.pathname === '/login') {
-            navigate('/dashboard', { replace: true });
-          }
-        }
       } catch {
-        // Not authenticated - redirect to login
-        if (location.pathname !== '/login') {
-          navigate('/login', { replace: true });
-        }
+        // Not authenticated - this is fine, let the routes handle redirection
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [navigate, location.pathname]);
+  }, []);
 
   // Show loading screen while checking auth
   if (isLoading) {

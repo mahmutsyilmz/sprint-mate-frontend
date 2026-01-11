@@ -5,12 +5,17 @@ export const userService = {
   /**
    * Gets the current authenticated user's profile.
    */
-  getMe: () => api.get<User>('/users/me'),
+  getMe: async (): Promise<User> => {
+    const response = await api.get<User>('/users/me');
+    return response.data;
+  },
 
   /**
    * Updates the current user's role (FRONTEND or BACKEND).
    * This is required before the user can be matched with a partner.
    */
-  updateRole: (role: Role) =>
-    api.patch<User>('/users/me/role', { roleName: role }),
+  updateRole: async (role: Role): Promise<User> => {
+    const response = await api.patch<User>('/users/me/role', { roleName: role });
+    return response.data;
+  },
 };

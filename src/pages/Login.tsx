@@ -11,22 +11,28 @@ import { useAuth } from '../contexts';
  */
 export function Login() {
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (!isLoading && isAuthenticated && user) {
       if (user.role === null) {
         navigate('/role-select', { replace: true });
       } else {
         navigate('/dashboard', { replace: true });
       }
     }
-  }, [isAuthenticated, user, navigate]);
+  }, [isAuthenticated, isLoading, user, navigate]);
 
   const handleLogin = () => {
+    // Full page redirect to GitHub OAuth - NOT an axios call
     authService.login();
   };
+
+  // Don't render login UI if user is authenticated (they'll be redirected)
+  if (isAuthenticated && user) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-ide-bg font-mono relative overflow-hidden">
@@ -63,7 +69,7 @@ export function Login() {
               </p>
             </div>
 
-            {/* Action Section */}
+            {/* Action Section - GitHub OAuth Button Only */}
             <div className="w-full mb-6">
               <button 
                 onClick={handleLogin}

@@ -1,46 +1,25 @@
-// Base API configuration
-const API_BASE_URL = '/api';
+import axios from 'axios';
 
-async function fetchApi<T>(
-  endpoint: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    credentials: 'include', // Include cookies for session auth
-  });
+// Create axios instance with credentials support for session cookies
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api',
+  withCredentials: true, // Required for JSESSIONID cookies
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
 
-  if (!response.ok) {
-    throw new Error(`API Error: ${response.status} ${response.statusText}`);
+// Response interceptor for error handling
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle 401 Unauthorized - session expired or not authenticated
+    if (error.response?.status === 401) {
+      // Let the calling code handle 401 errors
+      return Promise.reject(error);
+    }
+    return Promise.reject(error);
   }
+);
 
-  // Handle 204 No Content
-  if (response.status === 204) {
-    return undefined as T;
-  }
-
-  return response.json();
-}
-
-export const api = {
-  get: <T>(endpoint: string) => fetchApi<T>(endpoint),
-  
-  post: <T>(endpoint: string, data?: unknown) =>
-    fetchApi<T>(endpoint, {
-      method: 'POST',
-      body: data ? JSON.stringify(data) : undefined,
-    }),
-  
-  patch: <T>(endpoint: string, data: unknown) =>
-    fetchApi<T>(endpoint, {
-      method: 'PATCH',
-      body: JSON.stringify(data),
-    }),
-  
-  delete: <T>(endpoint: string) =>
-    fetchApi<T>(endpoint, { method: 'DELETE' }),
-};
+export { api };
