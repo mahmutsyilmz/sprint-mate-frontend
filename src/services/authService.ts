@@ -1,6 +1,8 @@
 // Authentication Service
 // Handles GitHub OAuth2 login flow
 
+import { api } from './api';
+
 // Backend base URL - full page redirects don't go through Vite proxy
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
 
@@ -17,10 +19,11 @@ export const authService = {
   },
 
   /**
-   * Logs out the current user by calling backend logout endpoint.
-   * This clears the JSESSIONID cookie.
+   * Logs out the current user by calling the backend logout API.
+   * This invalidates the session and clears the JSESSIONID cookie.
+   * Returns a promise so we can handle post-logout actions.
    */
-  logout: () => {
-    window.location.href = `${BACKEND_URL}/logout`;
+  logout: async (): Promise<void> => {
+    await api.post('/auth/logout');
   },
 };

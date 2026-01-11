@@ -6,6 +6,13 @@ export interface User {
   name: string;
   surname: string | null;
   role: 'FRONTEND' | 'BACKEND' | null;
+  bio: string | null;
+}
+
+export interface UserUpdateRequest {
+  name: string;
+  bio?: string | null;
+  role?: 'FRONTEND' | 'BACKEND' | null;
 }
 
 export interface MatchStatus {

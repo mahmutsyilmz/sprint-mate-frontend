@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { User, Role } from '../types';
+import type { User, Role, UserUpdateRequest } from '../types';
 
 export const userService = {
   /**
@@ -16,6 +16,14 @@ export const userService = {
    */
   updateRole: async (role: Role): Promise<User> => {
     const response = await api.patch<User>('/users/me/role', { roleName: role });
+    return response.data;
+  },
+
+  /**
+   * Updates the current user's profile (name, bio, optionally role).
+   */
+  updateProfile: async (data: UserUpdateRequest): Promise<User> => {
+    const response = await api.put<User>('/users/me', data);
     return response.data;
   },
 };

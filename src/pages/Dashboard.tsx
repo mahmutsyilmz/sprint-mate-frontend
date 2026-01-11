@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { matchService } from '../services/matchService';
 import { useAuth } from '../contexts';
-import { TerminalPanel, type TerminalLog } from '../components';
+import { TerminalPanel, EditProfileModal, type TerminalLog } from '../components';
 import type { MatchStatus } from '../types';
 
 type DashboardState = 'IDLE' | 'WAITING' | 'MATCHED';
@@ -14,12 +15,46 @@ type DashboardState = 'IDLE' | 'WAITING' | 'MATCHED';
  * - Terminal panel as status log with typewriter effect
  */
 export function Dashboard() {
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
+  const navigate = useNavigate();
   const [matchStatus, setMatchStatus] = useState<MatchStatus | null>(null);
   const [dashboardState, setDashboardState] = useState<DashboardState>('IDLE');
   const [logs, setLogs] = useState<TerminalLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
+  
+  // User Menu & Modal state
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleLogout = async () => {
+    setIsUserMenuOpen(false);
+    addLog('> Logging out...', 'info');
+    await logout();
+    navigate('/login');
+  };
+
+  const handleEditProfile = () => {
+    setIsUserMenuOpen(false);
+    setIsEditProfileOpen(true);
+  };
+
+  const handleProfileUpdated = async () => {
+    await refreshUser();
+    addLog('> Profile updated successfully.', 'success');
+  };
 
   // Generate unique log ID
   const generateLogId = () => `log-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -224,10 +259,53 @@ export function Dashboard() {
         <div className="flex-1 text-center text-[#858585] font-display text-[11px]">
           Sprint Mate - Dashboard
         </div>
-        <div className="flex items-center gap-2 opacity-60">
-          <div className="w-3 h-3 rounded-full bg-ide-border"></div>
-          <div className="w-3 h-3 rounded-full bg-ide-border"></div>
-          <div className="w-3 h-3 rounded-full bg-ide-border"></div>
+        
+        {/* User Menu */}
+        <div className="relative" ref={userMenuRef}>
+          <button
+            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            className="flex items-center gap-2 px-2 py-1 rounded hover:bg-white/10 transition-colors"
+          >
+            <div className="w-5 h-5 rounded-full bg-primary/20 border border-primary/50 flex items-center justify-center">
+              <span className="text-primary text-[10px] font-bold">
+                {user?.name?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+            <span className="text-[#cccccc] text-xs hidden sm:inline">{user?.name || 'User'}</span>
+            <span className="material-symbols-outlined text-[14px] text-[#858585]">
+              {isUserMenuOpen ? 'expand_less' : 'expand_more'}
+            </span>
+          </button>
+          
+          {/* Dropdown Menu */}
+          {isUserMenuOpen && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-ide-panel border border-ide-border rounded-md shadow-xl z-50 overflow-hidden">
+              {/* User Info */}
+              <div className="px-3 py-2 border-b border-ide-border">
+                <p className="text-white text-sm font-bold truncate">{user?.name}</p>
+                <p className="text-[#858585] text-[10px] truncate">{user?.bio || 'No bio set'}</p>
+                <p className="text-primary text-[10px] font-bold mt-1">{user?.role || 'No role'}</p>
+              </div>
+              
+              {/* Menu Items */}
+              <div className="py-1">
+                <button
+                  onClick={handleEditProfile}
+                  className="w-full px-3 py-2 text-left text-sm text-[#cccccc] hover:bg-white/10 flex items-center gap-2 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">edit</span>
+                  Edit Profile
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-3 py-2 text-left text-sm text-[#cccccc] hover:bg-red-500/20 hover:text-red-400 flex items-center gap-2 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">logout</span>
+                  Logout
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </header>
 
@@ -248,14 +326,18 @@ export function Dashboard() {
           </button>
           <div className="flex-1" />
           <button 
-            onClick={logout}
+            onClick={handleEditProfile}
+            className="w-10 h-10 flex items-center justify-center text-[#858585] opacity-60 hover:opacity-100 hover:text-primary cursor-pointer transition-colors"
+            title="Edit Profile"
+          >
+            <span className="material-symbols-outlined text-[24px]">person</span>
+          </button>
+          <button 
+            onClick={handleLogout}
             className="w-10 h-10 flex items-center justify-center text-[#858585] opacity-60 hover:opacity-100 hover:text-red-400 cursor-pointer transition-colors"
             title="Logout"
           >
             <span className="material-symbols-outlined text-[24px]">logout</span>
-          </button>
-          <button className="w-10 h-10 flex items-center justify-center text-[#858585] opacity-60 cursor-default">
-            <span className="material-symbols-outlined text-[24px]">settings</span>
           </button>
         </aside>
 
@@ -379,6 +461,16 @@ export function Dashboard() {
           </div>
         </div>
       </footer>
+
+      {/* Edit Profile Modal */}
+      {user && (
+        <EditProfileModal
+          isOpen={isEditProfileOpen}
+          onClose={() => setIsEditProfileOpen(false)}
+          user={user}
+          onProfileUpdated={handleProfileUpdated}
+        />
+      )}
     </div>
   );
 }

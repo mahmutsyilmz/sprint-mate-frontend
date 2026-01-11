@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
+import { authService } from '../services/authService';
 import { userService } from '../services/userService';
 import type { User } from '../types';
 
@@ -7,7 +8,7 @@ interface AuthContextType {
   isLoading: boolean;
   isAuthenticated: boolean;
   refreshUser: () => Promise<User | null>;
-  logout: () => void;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -126,7 +127,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshUser = async (): Promise<User | null> => {
+  const refreshUser = useCallback(async (): Promise<User | null> => {
     try {
       const userData = await userService.getMe();
       setUser(userData);
@@ -135,14 +136,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
       return null;
     }
-  };
+  }, []);
 
-  const logout = () => {
-    // Clear local state and redirect to backend logout
-    setUser(null);
-    const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:8080';
-    window.location.href = `${backendUrl}/logout`;
-  };
+  const logout = useCallback(async (): Promise<void> => {
+    try {
+      // Call API to invalidate session
+      await authService.logout();
+    } catch (error) {
+      // Even if API fails, clear local state
+      console.error('Logout error:', error);
+    } finally {
+      // Clear local state - redirect handled by component
+      setUser(null);
+    }
+  }, []);
 
   // Check authentication on mount
   useEffect(() => {
