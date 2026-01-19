@@ -10,6 +10,28 @@ export interface User {
   skills: string[];
 }
 
+/**
+ * Active match info returned from /api/users/me/status
+ */
+export interface ActiveMatchInfo {
+  matchId: string;
+  communicationLink: string;
+  partnerName: string;
+  partnerRole: string;
+  partnerSkills: string[];
+  projectTitle: string;
+  projectDescription: string;
+}
+
+/**
+ * Complete user status including active match.
+ * Used on login/refresh to restore user state.
+ */
+export interface UserStatus extends User {
+  hasActiveMatch: boolean;
+  activeMatch: ActiveMatchInfo | null;
+}
+
 export interface UserUpdateRequest {
   name: string;
   bio?: string | null;

@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { User, Role, UserUpdateRequest } from '../types';
+import type { User, UserStatus, Role, UserUpdateRequest } from '../types';
 
 export const userService = {
   /**
@@ -7,6 +7,15 @@ export const userService = {
    */
   getMe: async (): Promise<User> => {
     const response = await api.get<User>('/users/me');
+    return response.data;
+  },
+
+  /**
+   * Gets the current user's complete status including active match.
+   * Use this on login/refresh to restore user state.
+   */
+  getStatus: async (): Promise<UserStatus> => {
+    const response = await api.get<UserStatus>('/users/me/status');
     return response.data;
   },
 

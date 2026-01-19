@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { matchService } from '../services/matchService';
 import { useAuth } from '../contexts';
 import { TerminalPanel, EditProfileModal, SkillsList, type TerminalLog } from '../components';
-import type { MatchStatus } from '../types';
+import type { MatchStatus, ActiveMatchInfo } from '../types';
 
 type DashboardState = 'IDLE' | 'WAITING' | 'MATCHED';
 
@@ -15,18 +15,39 @@ type DashboardState = 'IDLE' | 'WAITING' | 'MATCHED';
  * - Terminal panel as status log with typewriter effect
  */
 export function Dashboard() {
-  const { user, logout, refreshUser } = useAuth();
+  const { user, logout, refreshUser, hasActiveMatch, activeMatch, clearActiveMatch, refreshStatus } = useAuth();
   const navigate = useNavigate();
   const [matchStatus, setMatchStatus] = useState<MatchStatus | null>(null);
   const [dashboardState, setDashboardState] = useState<DashboardState>('IDLE');
   const [logs, setLogs] = useState<TerminalLog[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isPolling, setIsPolling] = useState(false);
-  
+
   // User Menu & Modal state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  // Initialize state from AuthContext if user has active match (session persistence fix)
+  useEffect(() => {
+    if (hasActiveMatch && activeMatch) {
+      // Convert ActiveMatchInfo to MatchStatus format
+      const restoredStatus: MatchStatus = {
+        status: 'MATCHED',
+        matchId: activeMatch.matchId,
+        meetingUrl: activeMatch.communicationLink,
+        partnerName: activeMatch.partnerName,
+        partnerRole: activeMatch.partnerRole,
+        partnerSkills: activeMatch.partnerSkills,
+        projectTitle: activeMatch.projectTitle,
+        projectDescription: activeMatch.projectDescription,
+        waitingSince: null,
+        queuePosition: null
+      };
+      setMatchStatus(restoredStatus);
+      setDashboardState('MATCHED');
+    }
+  }, [hasActiveMatch, activeMatch]);
 
   // Close user menu when clicking outside
   useEffect(() => {
@@ -84,16 +105,19 @@ export function Dashboard() {
     const pollInterval = setInterval(async () => {
       try {
         const status = await matchService.findMatch();
-        
+
         if (status.status === 'MATCHED') {
           setMatchStatus(status);
           setDashboardState('MATCHED');
           setIsPolling(false);
-          
+
           addLog(`> Match Found!`, 'success');
           addLog(`> Partner: @${status.partnerName} (${status.partnerRole})`, 'success');
           addLog(`> Project: ${status.projectTitle}`, 'success');
-          
+
+          // Refresh AuthContext status to sync active match state
+          refreshStatus();
+
           toast.success('Match found! Check your project details.', {
             duration: 5000,
             style: {
@@ -118,22 +142,25 @@ export function Dashboard() {
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(pollInterval);
-  }, [isPolling, dashboardState, addLog]);
+  }, [isPolling, dashboardState, addLog, refreshStatus]);
 
   const handleFindMatch = async () => {
     setIsLoading(true);
     addLog('> Searching for partner...', 'info');
-    
+
     try {
       const status = await matchService.findMatch();
       setMatchStatus(status);
-      
+
       if (status.status === 'MATCHED') {
         setDashboardState('MATCHED');
         addLog(`> Match Found!`, 'success');
         addLog(`> Partner: @${status.partnerName} (${status.partnerRole})`, 'success');
         addLog(`> Project: ${status.projectTitle}`, 'success');
-        
+
+        // Refresh AuthContext status to sync active match state
+        await refreshStatus();
+
         toast.success('Partner matched! Start your sprint.', {
           duration: 4000,
           style: {
@@ -149,7 +176,7 @@ export function Dashboard() {
         setIsPolling(true);
         addLog(`> Added to queue. Position: ${status.queuePosition}`, 'warning');
         addLog(`> Waiting for ${user?.role === 'FRONTEND' ? 'Backend' : 'Frontend'} developer...`, 'info');
-        
+
         toast('Added to matching queue...', {
           duration: 3000,
           icon: '⏳',
@@ -205,19 +232,23 @@ export function Dashboard() {
 
   const handleCompleteSprint = async () => {
     if (!matchStatus?.matchId) return;
-    
+
     setIsLoading(true);
     addLog('> Completing sprint...', 'info');
-    
+
     try {
       await matchService.completeMatch(matchStatus.matchId);
       addLog('> Sprint committed successfully. Repo saved.', 'success');
       addLog('> Great work! Ready for next sprint.', 'success');
-      
+
+      // Clear local state
       setMatchStatus(null);
       setDashboardState('IDLE');
-      
-      toast.success('Sprint completed! 🎉', {
+
+      // Clear AuthContext active match state (for session persistence)
+      clearActiveMatch();
+
+      toast.success('Sprint completed!', {
         duration: 5000,
         style: {
           background: '#252526',
@@ -671,14 +702,15 @@ function ProjectReadme({
         </div>
         
         {meetingUrl && (
-          <a 
-            href={meetingUrl} 
-            target="_blank" 
+          <a
+            href={meetingUrl}
+            target="_blank"
             rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-ide-blue text-white rounded hover:bg-blue-600 transition-colors no-underline"
+            className="mt-4 inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all no-underline shadow-lg hover:shadow-emerald-500/25 hover:scale-105 font-bold text-base"
           >
-            <span className="material-symbols-outlined text-[18px]">videocam</span>
-            Join Meeting
+            <span className="text-xl">💬</span>
+            <span>Open Team Chat</span>
+            <span className="material-symbols-outlined text-[18px]">open_in_new</span>
           </a>
         )}
       </div>

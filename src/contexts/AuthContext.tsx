@@ -1,13 +1,17 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
-import type { User } from '../types';
+import type { User, UserStatus, ActiveMatchInfo } from '../types';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  hasActiveMatch: boolean;
+  activeMatch: ActiveMatchInfo | null;
   refreshUser: () => Promise<User | null>;
+  refreshStatus: () => Promise<UserStatus | null>;
+  clearActiveMatch: () => void;
   logout: () => Promise<void>;
 }
 
@@ -126,6 +130,8 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasActiveMatch, setHasActiveMatch] = useState(false);
+  const [activeMatch, setActiveMatch] = useState<ActiveMatchInfo | null>(null);
 
   const refreshUser = useCallback(async (): Promise<User | null> => {
     try {
@@ -138,6 +144,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  /**
+   * Fetches complete user status including active match info.
+   * Critical for session persistence - restores match state on login/refresh.
+   */
+  const refreshStatus = useCallback(async (): Promise<UserStatus | null> => {
+    try {
+      const status = await userService.getStatus();
+      setUser(status);
+      setHasActiveMatch(status.hasActiveMatch);
+      setActiveMatch(status.activeMatch);
+      return status;
+    } catch {
+      setUser(null);
+      setHasActiveMatch(false);
+      setActiveMatch(null);
+      return null;
+    }
+  }, []);
+
+  /**
+   * Clears active match state (called when match is completed).
+   */
+  const clearActiveMatch = useCallback(() => {
+    setHasActiveMatch(false);
+    setActiveMatch(null);
+  }, []);
+
   const logout = useCallback(async (): Promise<void> => {
     try {
       // Call API to invalidate session
@@ -146,20 +179,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Even if API fails, clear local state
       console.error('Logout error:', error);
     } finally {
-      // Clear local state - redirect handled by component
+      // Clear all local state - redirect handled by component
       setUser(null);
+      setHasActiveMatch(false);
+      setActiveMatch(null);
     }
   }, []);
 
-  // Check authentication on mount
+  // Check authentication and active match status on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const userData = await userService.getMe();
-        setUser(userData);
+        // Use getStatus instead of getMe to get complete user state with active match
+        const status = await userService.getStatus();
+        setUser(status);
+        setHasActiveMatch(status.hasActiveMatch);
+        setActiveMatch(status.activeMatch);
       } catch {
         // Not authenticated - this is fine, let the routes handle redirection
         setUser(null);
+        setHasActiveMatch(false);
+        setActiveMatch(null);
       } finally {
         setIsLoading(false);
       }
@@ -174,12 +214,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }
 
   return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        isLoading, 
+    <AuthContext.Provider
+      value={{
+        user,
+        isLoading,
         isAuthenticated: !!user,
+        hasActiveMatch,
+        activeMatch,
         refreshUser,
+        refreshStatus,
+        clearActiveMatch,
         logout
       }}
     >
