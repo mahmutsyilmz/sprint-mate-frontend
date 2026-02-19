@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { matchService } from '../services/matchService';
 import { useAuth } from '../contexts';
-import { TerminalPanel, EditProfileModal, SkillsList, type TerminalLog } from '../components';
-import type { MatchStatus, ActiveMatchInfo } from '../types';
+import { TerminalPanel, EditProfileModal, SkillsList, ChatPanel, CompleteSprintModal, type TerminalLog } from '../components';
+import type { MatchStatus, MatchCompletion } from '../types';
 
 type DashboardState = 'IDLE' | 'WAITING' | 'MATCHED';
 
@@ -26,6 +26,8 @@ export function Dashboard() {
   // User Menu & Modal state
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Initialize state from AuthContext if user has active match (session persistence fix)
@@ -230,49 +232,37 @@ export function Dashboard() {
     }
   };
 
-  const handleCompleteSprint = async () => {
+  const handleOpenCompleteModal = () => {
     if (!matchStatus?.matchId) return;
+    setIsCompleteModalOpen(true);
+  };
 
-    setIsLoading(true);
-    addLog('> Completing sprint...', 'info');
+  const handleSprintCompleted = (result: MatchCompletion) => {
+    addLog('> Sprint committed successfully. Repo saved.', 'success');
 
-    try {
-      await matchService.completeMatch(matchStatus.matchId);
-      addLog('> Sprint committed successfully. Repo saved.', 'success');
-      addLog('> Great work! Ready for next sprint.', 'success');
-
-      // Clear local state
-      setMatchStatus(null);
-      setDashboardState('IDLE');
-
-      // Clear AuthContext active match state (for session persistence)
-      clearActiveMatch();
-
-      toast.success('Sprint completed!', {
-        duration: 5000,
-        style: {
-          background: '#252526',
-          color: '#52fa7c',
-          border: '1px solid #52fa7c',
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: '12px',
-        },
-      });
-    } catch (err) {
-      addLog('> Failed to complete sprint.', 'error');
-      toast.error('Failed to complete sprint.', {
-        style: {
-          background: '#252526',
-          color: '#f87171',
-          border: '1px solid #f87171',
-          fontFamily: 'JetBrains Mono, monospace',
-          fontSize: '12px',
-        },
-      });
-      console.error('Complete sprint error:', err);
-    } finally {
-      setIsLoading(false);
+    if (result.reviewScore !== null) {
+      addLog(`> AI Review Score: ${result.reviewScore}/100`, 'success');
     }
+
+    addLog('> Great work! Ready for next sprint.', 'success');
+
+    // Clear local state
+    setMatchStatus(null);
+    setDashboardState('IDLE');
+
+    // Clear AuthContext active match state (for session persistence)
+    clearActiveMatch();
+
+    toast.success(`Sprint completed! ${result.reviewScore !== null ? `Score: ${result.reviewScore}/100` : ''}`, {
+      duration: 5000,
+      style: {
+        background: '#252526',
+        color: '#52fa7c',
+        border: '1px solid #52fa7c',
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: '12px',
+      },
+    });
   };
 
   return (
@@ -425,15 +415,14 @@ export function Dashboard() {
             {/* Editor Content - README Preview Style */}
             <div className="p-6 overflow-auto h-[calc(100%-36px)]">
               {dashboardState === 'MATCHED' && matchStatus ? (
-                <ProjectReadme 
+                <ProjectReadme
                   title={matchStatus.projectTitle || ''}
                   description={matchStatus.projectDescription || ''}
                   partnerName={matchStatus.partnerName || ''}
                   partnerRole={matchStatus.partnerRole || ''}
                   partnerSkills={matchStatus.partnerSkills || []}
-                  meetingUrl={matchStatus.meetingUrl || ''}
-                  onComplete={handleCompleteSprint}
-                  isLoading={isLoading}
+                  onOpenChat={() => setIsChatOpen(true)}
+                  onComplete={handleOpenCompleteModal}
                 />
               ) : (
                 <WelcomeView 
@@ -501,6 +490,27 @@ export function Dashboard() {
           onClose={() => setIsEditProfileOpen(false)}
           user={user}
           onProfileUpdated={handleProfileUpdated}
+        />
+      )}
+
+      {/* Chat Panel */}
+      {dashboardState === 'MATCHED' && matchStatus?.matchId && user && (
+        <ChatPanel
+          matchId={matchStatus.matchId}
+          userId={user.id}
+          partnerName={matchStatus.partnerName || 'Partner'}
+          isOpen={isChatOpen}
+          onClose={() => setIsChatOpen(false)}
+        />
+      )}
+
+      {/* Complete Sprint Modal */}
+      {matchStatus?.matchId && (
+        <CompleteSprintModal
+          isOpen={isCompleteModalOpen}
+          onClose={() => setIsCompleteModalOpen(false)}
+          matchId={matchStatus.matchId}
+          onComplete={handleSprintCompleted}
         />
       )}
     </div>
@@ -637,24 +647,22 @@ function WelcomeView({
 }
 
 // Project README preview when matched
-function ProjectReadme({ 
-  title, 
-  description, 
-  partnerName, 
+function ProjectReadme({
+  title,
+  description,
+  partnerName,
   partnerRole,
   partnerSkills,
-  meetingUrl,
-  onComplete,
-  isLoading 
+  onOpenChat,
+  onComplete
 }: {
   title: string;
   description: string;
   partnerName: string;
   partnerRole: string;
   partnerSkills: string[];
-  meetingUrl: string;
+  onOpenChat: () => void;
   onComplete: () => void;
-  isLoading: boolean;
 }) {
   return (
     <div className="max-w-3xl mx-auto prose prose-invert">
@@ -701,18 +709,14 @@ function ProjectReadme({
           </div>
         </div>
         
-        {meetingUrl && (
-          <a
-            href={meetingUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-4 inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all no-underline shadow-lg hover:shadow-emerald-500/25 hover:scale-105 font-bold text-base"
-          >
-            <span className="text-xl">💬</span>
-            <span>Open Team Chat</span>
-            <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-          </a>
-        )}
+        <button
+          onClick={onOpenChat}
+          className="mt-4 inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-emerald-600 to-teal-600 text-white rounded-lg hover:from-emerald-700 hover:to-teal-700 transition-all shadow-lg hover:shadow-emerald-500/25 hover:scale-105 font-bold text-base cursor-pointer"
+        >
+          <span className="text-xl">💬</span>
+          <span>Open Team Chat</span>
+          <span className="material-symbols-outlined text-[18px]">chat</span>
+        </button>
       </div>
 
       {/* Project Description */}
@@ -730,14 +734,13 @@ function ProjectReadme({
       <div className="text-center pt-4 border-t border-ide-border">
         <button
           onClick={onComplete}
-          disabled={isLoading}
-          className="px-8 py-3 bg-primary text-black font-bold rounded hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center gap-2 mx-auto"
+          className="px-8 py-3 bg-primary text-black font-bold rounded hover:bg-primary/90 transition-colors flex items-center gap-2 mx-auto"
         >
           <span className="material-symbols-outlined">check_circle</span>
-          {isLoading ? 'Completing...' : 'Complete Sprint'}
+          Complete Sprint
         </button>
         <p className="text-syntax-gray text-xs mt-2">
-          Click when your 1-week sprint is finished
+          Submit your GitHub repository for AI review
         </p>
       </div>
     </div>

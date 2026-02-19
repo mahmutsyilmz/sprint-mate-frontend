@@ -19,12 +19,12 @@ export const matchService = {
   },
 
   /**
-   * Completes an active match with optional repository URL.
+   * Completes an active match with required GitHub repository URL for AI review.
    */
-  completeMatch: async (matchId: string, repositoryUrl?: string): Promise<MatchCompletion> => {
+  completeMatch: async (matchId: string, githubRepoUrl: string): Promise<MatchCompletion> => {
     const response = await api.post<MatchCompletion>(
       `/matches/${matchId}/complete`,
-      repositoryUrl ? { repositoryUrl } : undefined
+      { githubRepoUrl }
     );
     return response.data;
   },

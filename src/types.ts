@@ -56,7 +56,31 @@ export interface MatchCompletion {
   matchId: string;
   status: string;
   completedAt: string;
-  repositoryUrl: string | null;
+  repoUrl: string | null;
+  reviewScore: number | null;
+  reviewFeedback: string | null;
+  reviewStrengths: string[] | null;
+  reviewMissingElements: string[] | null;
 }
 
 export type Role = 'FRONTEND' | 'BACKEND';
+
+/**
+ * Chat message received from WebSocket or REST history endpoint.
+ */
+export interface ChatMessage {
+  id: string;
+  matchId: string;
+  senderId: string;
+  senderName: string;
+  content: string;
+  createdAt: string;
+}
+
+/**
+ * Chat message request for sending via WebSocket.
+ */
+export interface ChatMessageRequest {
+  matchId: string;
+  content: string;
+}
