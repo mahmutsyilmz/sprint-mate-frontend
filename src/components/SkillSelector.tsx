@@ -1,4 +1,4 @@
-import { useState, useEffect, type KeyboardEvent } from 'react';
+import { useState, useMemo, type KeyboardEvent } from 'react';
 import type { Role } from '../types';
 
 /**
@@ -34,45 +34,39 @@ interface SkillSelectorProps {
  * Includes "Other" input for custom skills.
  */
 export function SkillSelector({ selectedSkills, onChange, role, disabled = false }: SkillSelectorProps) {
-  const [selected, setSelected] = useState<Set<string>>(new Set(selectedSkills));
+  const selected = useMemo(() => new Set(selectedSkills), [selectedSkills]);
   const [customSkill, setCustomSkill] = useState('');
-  const [customSkills, setCustomSkills] = useState<string[]>([]);
+
+  const ALL_PREDEFINED: readonly string[] = useMemo(
+    () => [...FRONTEND_SKILLS, ...BACKEND_SKILLS, ...COMMON_SKILLS],
+    []
+  );
 
   // Get available skills based on role
-  const getAvailableSkills = (): string[] => {
+  const availableSkills = useMemo((): string[] => {
     if (role === 'FRONTEND') {
       return [...FRONTEND_SKILLS, ...COMMON_SKILLS];
     } else if (role === 'BACKEND') {
       return [...BACKEND_SKILLS, ...COMMON_SKILLS];
     }
-    // If no role, show all skills
     return [...FRONTEND_SKILLS, ...BACKEND_SKILLS, ...COMMON_SKILLS];
-  };
+  }, [role]);
 
-  const availableSkills = getAvailableSkills();
-
-  // Extract custom skills (skills not in predefined lists)
-  useEffect(() => {
-    const allPredefined = [...FRONTEND_SKILLS, ...BACKEND_SKILLS, ...COMMON_SKILLS];
-    const customs = selectedSkills.filter(skill => !allPredefined.includes(skill as any));
-    setCustomSkills(customs);
-  }, [selectedSkills]);
-
-  // Sync with parent when selectedSkills changes
-  useEffect(() => {
-    setSelected(new Set(selectedSkills));
-  }, [selectedSkills]);
+  // Derive custom skills from selectedSkills (no useState needed)
+  const customSkills = useMemo(
+    () => selectedSkills.filter(skill => !ALL_PREDEFINED.includes(skill)),
+    [selectedSkills, ALL_PREDEFINED]
+  );
 
   const toggleSkill = (skill: string) => {
     if (disabled) return;
-    
+
     const newSelected = new Set(selected);
     if (newSelected.has(skill)) {
       newSelected.delete(skill);
     } else {
       newSelected.add(skill);
     }
-    setSelected(newSelected);
     onChange(Array.from(newSelected));
   };
 
@@ -88,8 +82,6 @@ export function SkillSelector({ selectedSkills, onChange, role, disabled = false
 
     const newSelected = new Set(selected);
     newSelected.add(trimmed);
-    setSelected(newSelected);
-    setCustomSkills(prev => [...prev, trimmed]);
     onChange(Array.from(newSelected));
     setCustomSkill('');
   };
@@ -103,11 +95,9 @@ export function SkillSelector({ selectedSkills, onChange, role, disabled = false
 
   const removeCustomSkill = (skill: string) => {
     if (disabled) return;
-    
+
     const newSelected = new Set(selected);
     newSelected.delete(skill);
-    setSelected(newSelected);
-    setCustomSkills(prev => prev.filter(s => s !== skill));
     onChange(Array.from(newSelected));
   };
 

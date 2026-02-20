@@ -142,6 +142,7 @@ export function useChat(matchId: string | null): UseChatReturn {
     });
 
     clientRef.current = client;
+    const currentMessageIds = messageIdsRef.current;
     client.activate();
 
     // Cleanup on unmount or matchId change
@@ -150,7 +151,7 @@ export function useChat(matchId: string | null): UseChatReturn {
         client.deactivate();
       }
       clientRef.current = null;
-      messageIdsRef.current.clear();
+      currentMessageIds.clear();
     };
   }, [matchId, loadHistory, addMessage]);
 

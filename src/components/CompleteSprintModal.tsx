@@ -22,16 +22,18 @@ export function CompleteSprintModal({ isOpen, onClose, matchId, onComplete }: Co
   const [modalState, setModalState] = useState<ModalState>('input');
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MatchCompletion | null>(null);
+  const [prevIsOpen, setPrevIsOpen] = useState(false);
 
-  // Reset state when modal opens
-  useEffect(() => {
-    if (isOpen) {
-      setGithubUrl('');
-      setModalState('input');
-      setError(null);
-      setResult(null);
-    }
-  }, [isOpen]);
+  // Reset state when modal opens (render-time state adjustment)
+  if (isOpen && !prevIsOpen) {
+    setGithubUrl('');
+    setModalState('input');
+    setError(null);
+    setResult(null);
+  }
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+  }
 
   // Handle escape key (only in input state)
   useEffect(() => {

@@ -40,7 +40,9 @@ export function TerminalPanel({ logs, isPolling = false }: TerminalPanelProps) {
 
     // If there's no entry for this log, start typing it
     if (currentDisplayed === undefined) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- animation requires synchronous state seeding
       setTypingLogId(lastLog.id);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- animation requires synchronous state seeding
       setDisplayedLogs(prev => new Map(prev).set(lastLog.id, ''));
     }
   }, [logs, displayedLogs]);
@@ -68,6 +70,7 @@ export function TerminalPanel({ logs, isPolling = false }: TerminalPanelProps) {
 
       return () => clearTimeout(timeout);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- animation completion
       setTypingLogId(null);
     }
   }, [typingLogId, displayedLogs, logs]);
@@ -78,6 +81,7 @@ export function TerminalPanel({ logs, isPolling = false }: TerminalPanelProps) {
     logs.slice(0, -1).forEach(log => {
       initialLogs.set(log.id, log.message);
     });
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- initialize existing logs on mount
     setDisplayedLogs(prev => {
       const merged = new Map(initialLogs);
       prev.forEach((value, key) => {
@@ -85,6 +89,7 @@ export function TerminalPanel({ logs, isPolling = false }: TerminalPanelProps) {
       });
       return merged;
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getLogColor = (type: TerminalLog['type']) => {
