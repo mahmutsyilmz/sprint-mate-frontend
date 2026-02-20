@@ -41,6 +41,7 @@ vi.mock('../components', () => ({
   SkillsList: () => <div data-testid="skills-list" />,
   ChatPanel: () => <div data-testid="chat-panel" />,
   CompleteSprintModal: () => <div data-testid="complete-sprint-modal" />,
+  MatchPreferencesModal: () => <div data-testid="match-preferences-modal" />,
 }));
 
 // Suppress toast in tests
