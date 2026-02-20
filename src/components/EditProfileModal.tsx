@@ -13,7 +13,7 @@ interface EditProfileModalProps {
 }
 
 /**
- * Modal for editing user profile (name, bio, role, skills).
+ * Modal for editing user profile (name, bio, role, skills, preferences).
  * IDE/Dark theme aesthetic with minimalist design.
  */
 export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: EditProfileModalProps) {
@@ -48,28 +48,28 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
 
   const validate = (): boolean => {
     const newErrors: { name?: string; bio?: string } = {};
-    
+
     if (!name.trim()) {
       newErrors.name = 'Name is required';
     } else if (name.length > 100) {
       newErrors.name = 'Name must be at most 100 characters';
     }
-    
+
     if (bio && bio.length > 255) {
       newErrors.bio = 'Bio must be at most 255 characters';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    
+
     if (!validate()) return;
-    
+
     setIsSubmitting(true);
-    
+
     try {
       await userService.updateProfile({
         name: name.trim(),
@@ -77,10 +77,10 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
         role: role,
         skills: skills,
       });
-      
+
       // Refresh user data in context
       await onProfileUpdated();
-      
+
       toast.success('Profile updated successfully!', {
         duration: 3000,
         style: {
@@ -95,7 +95,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
           secondary: '#252526',
         },
       });
-      
+
       onClose();
     } catch (error) {
       logger.error('Profile update error:', error);
@@ -118,11 +118,11 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={onClose}
       />
-      
+
       {/* Modal */}
       <div className="relative w-full max-w-xl mx-4 bg-ide-panel border border-ide-border rounded-lg shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
         {/* Header - Tab bar style */}
@@ -131,14 +131,14 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
             <span className="material-symbols-outlined text-[18px] text-primary">person</span>
             <span className="text-[#cccccc] text-sm font-display">Edit Profile</span>
           </div>
-          <button 
+          <button
             onClick={onClose}
             className="w-6 h-6 flex items-center justify-center text-[#858585] hover:text-white hover:bg-white/10 rounded transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
-        
+
         {/* Form Content */}
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
           {/* Name Field */}
@@ -160,7 +160,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
               <p className="text-red-400 text-xs mt-1">{errors.name}</p>
             )}
           </div>
-          
+
           {/* Bio Field */}
           <div>
             <label className="block text-[11px] text-[#bbbbbb] uppercase tracking-wide mb-2 font-display">
@@ -204,7 +204,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
                   <div className="text-[10px] opacity-70">UI/UX Developer</div>
                 </div>
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => setRole('BACKEND')}
@@ -226,7 +226,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
               Your role determines which skills are shown and who you'll be matched with.
             </p>
           </div>
-          
+
           {/* Skills Selector */}
           <SkillSelector
             selectedSkills={skills}
@@ -234,7 +234,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
             role={role}
             disabled={isSubmitting}
           />
-          
+
           {/* Actions */}
           <div className="flex items-center justify-end gap-3 pt-2">
             <button

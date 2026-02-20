@@ -4,8 +4,8 @@ import { chatService } from '../services';
 import { logger } from '../utils/logger';
 import type { ChatMessage, ChatMessageRequest } from '../types';
 
-// Use native WebSocket URL (ws:// instead of http://)
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8080/ws';
+// WebSocket URL - uses same origin via Vite proxy so session cookie is sent
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:5173/ws';
 const RECONNECT_DELAY_BASE = 1000;
 const MAX_RECONNECT_DELAY = 30000;
 
@@ -31,6 +31,8 @@ export function useChat(matchId: string | null): UseChatReturn {
 
   const clientRef = useRef<Client | null>(null);
   const reconnectAttemptRef = useRef(0);
+  const shouldStopRef = useRef(false);
+  const hasConnectedRef = useRef(false);
   const messageIdsRef = useRef<Set<string>>(new Set());
 
   // Load chat history
@@ -91,9 +93,14 @@ export function useChat(matchId: string | null): UseChatReturn {
     loadHistory();
 
     // Setup STOMP client with native WebSocket
+    // Auto-reconnect is disabled (reconnectDelay: 0) - we handle reconnection manually
+    // to prevent infinite loops on auth errors
+    shouldStopRef.current = false;
+    hasConnectedRef.current = false;
+
     const client = new Client({
       brokerURL: WS_URL,
-      reconnectDelay: RECONNECT_DELAY_BASE,
+      reconnectDelay: 0,
       heartbeatIncoming: 10000,
       heartbeatOutgoing: 10000,
 
@@ -102,6 +109,7 @@ export function useChat(matchId: string | null): UseChatReturn {
         setIsConnected(true);
         setError(null);
         reconnectAttemptRef.current = 0;
+        hasConnectedRef.current = true;
 
         // Subscribe to match topic
         client.subscribe(`/topic/match/${matchId}`, (message: IMessage) => {
@@ -120,24 +128,52 @@ export function useChat(matchId: string | null): UseChatReturn {
       },
 
       onStompError: (frame) => {
-        logger.error('STOMP error:', frame.headers['message']);
-        setError('Connection error. Retrying...');
+        const errorMsg = frame.headers['message'] || '';
+        logger.error('STOMP error:', errorMsg);
+
+        // Stop reconnecting on auth errors (session expired, not authenticated)
+        shouldStopRef.current = true;
+        setError('Session expired. Please refresh the page.');
       },
 
-      onWebSocketError: (event) => {
-        logger.error('WebSocket error:', event);
-        setError('Connection error. Retrying...');
+      onWebSocketError: () => {
+        // Counted in onWebSocketClose
       },
 
-      onWebSocketClose: () => {
+      onWebSocketClose: (event) => {
         setIsConnected(false);
-        // Exponential backoff for reconnection
+
+        // Don't reconnect if stopped (auth error or too many failures)
+        if (shouldStopRef.current) return;
+
+        // If STOMP handshake never succeeded, this is likely an auth error
+        // (server rejects CONNECT in interceptor) - stop retrying immediately
+        if (!hasConnectedRef.current) {
+          logger.warn('WebSocket closed before STOMP handshake - likely auth error, stopping reconnection');
+          shouldStopRef.current = true;
+          setError('Session expired. Please refresh the page.');
+          return;
+        }
+
         reconnectAttemptRef.current++;
+        if (reconnectAttemptRef.current >= 5) {
+          logger.warn('Too many WebSocket failures - stopping reconnection');
+          shouldStopRef.current = true;
+          setError('Chat connection failed. Please refresh the page.');
+          return;
+        }
+
+        // Manual reconnect with exponential backoff
         const delay = Math.min(
           RECONNECT_DELAY_BASE * Math.pow(2, reconnectAttemptRef.current),
           MAX_RECONNECT_DELAY
         );
         logger.debug(`Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current})`);
+        setTimeout(() => {
+          if (!shouldStopRef.current && clientRef.current) {
+            client.activate();
+          }
+        }, delay);
       }
     });
 

@@ -1,5 +1,17 @@
 // API Response Types - matching backend DTOs
 
+export interface UserPreference {
+  difficultyPreference: number | null;
+  preferredThemeCodes: string[];
+  preferredThemeNames: string[];
+  learningGoals: string | null;
+}
+
+export interface ProjectTheme {
+  code: string;
+  displayName: string;
+}
+
 export interface User {
   id: string;
   githubUrl: string;
@@ -8,6 +20,7 @@ export interface User {
   role: 'FRONTEND' | 'BACKEND' | null;
   bio: string | null;
   skills: string[];
+  preference: UserPreference | null;
 }
 
 /**
@@ -32,11 +45,18 @@ export interface UserStatus extends User {
   activeMatch: ActiveMatchInfo | null;
 }
 
+export interface UserPreferenceRequest {
+  difficultyPreference: number | null;
+  preferredThemeCodes: string[];
+  learningGoals: string | null;
+}
+
 export interface UserUpdateRequest {
   name: string;
   bio?: string | null;
   role?: 'FRONTEND' | 'BACKEND' | null;
   skills?: string[];
+  preference?: UserPreferenceRequest | null;
 }
 
 export interface MatchStatus {

@@ -171,7 +171,7 @@ export function CompleteSprintModal({ isOpen, onClose, matchId, onComplete }: Co
                   <p className="text-red-400 text-xs mt-2">{error}</p>
                 )}
                 <p className="text-[10px] text-[#858585] mt-2">
-                  Your repository must be public and contain a README.md file.
+                  Your repository must contain a README.md file. Private repos are supported.
                 </p>
               </div>
 
