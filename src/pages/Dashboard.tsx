@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { matchService } from '../services/matchService';
 import { useAuth } from '../contexts';
 import { logger } from '../utils/logger';
-import { TerminalPanel, EditProfileModal, SkillsList, ChatPanel, CompleteSprintModal, type TerminalLog } from '../components';
+import { TerminalPanel, EditProfileModal, SkillsList, ChatPanel, CompleteSprintModal, MatchPreferencesModal, type TerminalLog } from '../components';
 import type { MatchStatus, MatchCompletion } from '../types';
 
 type DashboardState = 'IDLE' | 'WAITING' | 'MATCHED';
@@ -29,6 +29,8 @@ export function Dashboard() {
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isCompleteModalOpen, setIsCompleteModalOpen] = useState(false);
+  const [isMatchPrefsOpen, setIsMatchPrefsOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   // Initialize state from AuthContext if user has active match (session persistence fix)
@@ -271,12 +273,18 @@ export function Dashboard() {
       {/* Top Menu Bar */}
       <header className="h-8 bg-ide-panel border-b border-ide-border flex items-center px-3 select-none text-xs">
         <div className="flex items-center gap-4 text-[#cccccc]">
-          <span className="opacity-60 cursor-default">File</span>
-          <span className="opacity-60 cursor-default">Edit</span>
-          <span className="opacity-60 cursor-default">View</span>
-          <span className="opacity-60 cursor-default">Go</span>
-          <span className="opacity-60 cursor-default">Run</span>
-          <span className="opacity-60 cursor-default">Help</span>
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="md:hidden opacity-60 hover:opacity-100 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[18px]">menu</span>
+          </button>
+          <span className="opacity-60 cursor-default hidden sm:inline">File</span>
+          <span className="opacity-60 cursor-default hidden sm:inline">Edit</span>
+          <span className="opacity-60 cursor-default hidden sm:inline">View</span>
+          <span className="opacity-60 cursor-default hidden md:inline">Go</span>
+          <span className="opacity-60 cursor-default hidden md:inline">Run</span>
+          <span className="opacity-60 cursor-default hidden md:inline">Help</span>
         </div>
         <div className="flex-1 text-center text-[#858585] font-display text-[11px]">
           Sprint Mate - Dashboard
@@ -333,7 +341,7 @@ export function Dashboard() {
 
       <div className="flex-1 flex overflow-hidden">
         {/* Activity Bar */}
-        <aside className="w-12 bg-ide-panel border-r border-ide-border flex flex-col items-center py-2 gap-4">
+        <aside className={`w-12 bg-ide-panel border-r border-ide-border flex-col items-center py-2 gap-4 hidden md:flex ${isSidebarOpen ? '!flex' : ''}`}>
           <button className="w-10 h-10 flex items-center justify-center text-primary cursor-default">
             <span className="material-symbols-outlined text-[24px]">folder</span>
           </button>
@@ -364,7 +372,7 @@ export function Dashboard() {
         </aside>
 
         {/* Explorer Panel - STATIC */}
-        <aside className="w-60 bg-ide-panel border-r border-ide-border flex flex-col">
+        <aside className={`w-60 bg-ide-panel border-r border-ide-border flex-col hidden lg:flex ${isSidebarOpen ? '!flex' : ''}`}>
           <div className="h-8 px-4 flex items-center justify-between text-[11px] text-[#bbbbbb] uppercase tracking-wide font-display">
             <span>Explorer</span>
             <span className="material-symbols-outlined text-[16px] opacity-60">more_horiz</span>
@@ -426,11 +434,11 @@ export function Dashboard() {
                   onComplete={handleOpenCompleteModal}
                 />
               ) : (
-                <WelcomeView 
+                <WelcomeView
                   user={user}
                   dashboardState={dashboardState}
                   queuePosition={matchStatus?.queuePosition}
-                  onFindMatch={handleFindMatch}
+                  onFindMatch={() => setIsMatchPrefsOpen(true)}
                   onCancelWaiting={handleCancelWaiting}
                   isLoading={isLoading}
                 />
@@ -502,6 +510,20 @@ export function Dashboard() {
           partnerName={matchStatus.partnerName || 'Partner'}
           isOpen={isChatOpen}
           onClose={() => setIsChatOpen(false)}
+        />
+      )}
+
+      {/* Match Preferences Modal */}
+      {user && (
+        <MatchPreferencesModal
+          isOpen={isMatchPrefsOpen}
+          onClose={() => setIsMatchPrefsOpen(false)}
+          user={user}
+          onStartMatching={() => {
+            setIsMatchPrefsOpen(false);
+            handleFindMatch();
+          }}
+          onPreferencesUpdated={refreshUser}
         />
       )}
 

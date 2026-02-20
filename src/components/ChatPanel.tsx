@@ -15,7 +15,7 @@ interface ChatPanelProps {
  * Displays chat messages and allows sending new messages.
  */
 export function ChatPanel({ matchId, userId, partnerName, isOpen, onClose }: ChatPanelProps) {
-  const { messages, isConnected, isLoading, error, sendMessage } = useChat(matchId);
+  const { messages, isConnected, isLoading, error, sendMessage } = useChat(isOpen ? matchId : null);
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -50,7 +50,7 @@ export function ChatPanel({ matchId, userId, partnerName, isOpen, onClose }: Cha
   if (!isOpen) return null;
 
   return (
-    <div className="fixed bottom-4 right-4 w-96 h-[500px] bg-ide-panel border border-ide-border rounded-lg shadow-2xl flex flex-col z-50">
+    <div className="fixed bottom-0 right-0 w-full h-full sm:bottom-4 sm:right-4 sm:w-96 sm:h-[500px] bg-ide-panel border border-ide-border sm:rounded-lg shadow-2xl flex flex-col z-50">
       {/* Header */}
       <div className="h-12 px-4 flex items-center justify-between border-b border-ide-border bg-ide-bg rounded-t-lg">
         <div className="flex items-center gap-2">

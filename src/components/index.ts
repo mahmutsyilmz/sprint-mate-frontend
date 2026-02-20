@@ -7,3 +7,5 @@ export { EditProfileModal } from './EditProfileModal';
 export { SkillSelector, SkillBadge, SkillsList } from './SkillSelector';
 export { ChatPanel } from './ChatPanel';
 export { CompleteSprintModal } from './CompleteSprintModal';
+export { MatchPreferencesModal } from './MatchPreferencesModal';
+export { ErrorBoundary } from './ErrorBoundary';

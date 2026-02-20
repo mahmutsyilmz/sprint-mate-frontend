@@ -1,13 +1,15 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './contexts';
-import { ProtectedRoute, RoleSelectRoute } from './components';
+import { ProtectedRoute, RoleSelectRoute, ErrorBoundary } from './components';
 import { Login } from './pages/Login';
 import { RoleSelect } from './pages/RoleSelect';
 import { Dashboard } from './pages/Dashboard';
+import { NotFound } from './pages/NotFound';
 
 function App() {
   return (
+    <ErrorBoundary>
     <BrowserRouter>
       <AuthProvider>
         {/* Toast container with IDE styling */}
@@ -52,10 +54,11 @@ function App() {
           
           {/* Default redirect */}
           <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
