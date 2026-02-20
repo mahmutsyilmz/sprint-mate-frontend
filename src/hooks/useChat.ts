@@ -140,7 +140,7 @@ export function useChat(matchId: string | null): UseChatReturn {
         // Counted in onWebSocketClose
       },
 
-      onWebSocketClose: (event) => {
+      onWebSocketClose: () => {
         setIsConnected(false);
 
         // Don't reconnect if stopped (auth error or too many failures)
