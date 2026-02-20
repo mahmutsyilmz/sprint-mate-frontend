@@ -62,6 +62,7 @@ const baseUser: User = {
   role: 'FRONTEND',
   bio: 'A developer',
   skills: ['React', 'TypeScript'],
+  preference: null,
 };
 
 const activeMatchInfo: ActiveMatchInfo = {

@@ -523,7 +523,7 @@ export function Dashboard() {
             setIsMatchPrefsOpen(false);
             handleFindMatch();
           }}
-          onPreferencesUpdated={refreshUser}
+          onPreferencesUpdated={async () => { await refreshUser(); }}
         />
       )}
 
