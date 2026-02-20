@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { matchService } from '../services/matchService';
 import { useAuth } from '../contexts';
+import { logger } from '../utils/logger';
 import { TerminalPanel, EditProfileModal, SkillsList, ChatPanel, CompleteSprintModal, type TerminalLog } from '../components';
 import type { MatchStatus, MatchCompletion } from '../types';
 
@@ -139,7 +140,7 @@ export function Dashboard() {
           setMatchStatus(status);
         }
       } catch (err) {
-        console.error('Polling error:', err);
+        logger.error('Polling error:', err);
       }
     }, 5000); // Poll every 5 seconds
 
@@ -202,7 +203,7 @@ export function Dashboard() {
           fontSize: '12px',
         },
       });
-      console.error('Find match error:', err);
+      logger.error('Find match error:', err);
     } finally {
       setIsLoading(false);
     }
@@ -228,7 +229,7 @@ export function Dashboard() {
       });
     } catch (err) {
       addLog('> Failed to leave queue.', 'error');
-      console.error('Cancel waiting error:', err);
+      logger.error('Cancel waiting error:', err);
     }
   };
 

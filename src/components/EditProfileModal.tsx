@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { userService } from '../services/userService';
+import { logger } from '../utils/logger';
 import { SkillSelector } from './SkillSelector';
 import type { User, Role } from '../types';
 
@@ -97,7 +98,7 @@ export function EditProfileModal({ isOpen, onClose, user, onProfileUpdated }: Ed
       
       onClose();
     } catch (error) {
-      console.error('Profile update error:', error);
+      logger.error('Profile update error:', error);
       toast.error('Failed to update profile. Please try again.', {
         style: {
           background: '#252526',

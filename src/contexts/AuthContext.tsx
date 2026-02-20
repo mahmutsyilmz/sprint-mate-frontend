@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { authService } from '../services/authService';
 import { userService } from '../services/userService';
+import { logger } from '../utils/logger';
 import type { User, UserStatus, ActiveMatchInfo } from '../types';
 
 interface AuthContextType {
@@ -177,7 +178,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       await authService.logout();
     } catch (error) {
       // Even if API fails, clear local state
-      console.error('Logout error:', error);
+      logger.error('Logout error:', error);
     } finally {
       // Clear all local state - redirect handled by component
       setUser(null);

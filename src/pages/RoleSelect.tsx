@@ -4,6 +4,7 @@ import toast from 'react-hot-toast';
 import { BinaryBackground } from '../components/BinaryBackground';
 import { userService } from '../services/userService';
 import { useAuth } from '../contexts';
+import { logger } from '../utils/logger';
 import type { Role } from '../types';
 
 interface RoleCardProps {
@@ -142,7 +143,7 @@ export function RoleSelect() {
         }
       );
       setSelectedRole(null);
-      console.error('Role update error:', err);
+      logger.error('Role update error:', err);
     } finally {
       setIsLoading(false);
     }

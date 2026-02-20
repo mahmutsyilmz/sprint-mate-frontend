@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Client, type IMessage } from '@stomp/stompjs';
 import { chatService } from '../services';
+import { logger } from '../utils/logger';
 import type { ChatMessage, ChatMessageRequest } from '../types';
 
 // Use native WebSocket URL (ws:// instead of http://)
@@ -45,7 +46,7 @@ export function useChat(matchId: string | null): UseChatReturn {
       history.forEach(msg => messageIdsRef.current.add(msg.id));
       setMessages(history);
     } catch (err) {
-      console.error('Failed to load chat history:', err);
+      logger.error('Failed to load chat history:', err);
       setError('Failed to load chat history');
     } finally {
       setIsLoading(false);
@@ -64,7 +65,7 @@ export function useChat(matchId: string | null): UseChatReturn {
   // Send a message via WebSocket
   const sendMessage = useCallback((content: string) => {
     if (!clientRef.current?.connected || !matchId) {
-      console.warn('Cannot send message: not connected');
+      logger.warn('Cannot send message: not connected');
       return;
     }
 
@@ -97,7 +98,7 @@ export function useChat(matchId: string | null): UseChatReturn {
       heartbeatOutgoing: 10000,
 
       onConnect: () => {
-        console.log('WebSocket connected');
+        logger.debug('WebSocket connected');
         setIsConnected(true);
         setError(null);
         reconnectAttemptRef.current = 0;
@@ -108,23 +109,23 @@ export function useChat(matchId: string | null): UseChatReturn {
             const chatMessage: ChatMessage = JSON.parse(message.body);
             addMessage(chatMessage);
           } catch (err) {
-            console.error('Failed to parse message:', err);
+            logger.error('Failed to parse message:', err);
           }
         });
       },
 
       onDisconnect: () => {
-        console.log('WebSocket disconnected');
+        logger.debug('WebSocket disconnected');
         setIsConnected(false);
       },
 
       onStompError: (frame) => {
-        console.error('STOMP error:', frame.headers['message']);
+        logger.error('STOMP error:', frame.headers['message']);
         setError('Connection error. Retrying...');
       },
 
       onWebSocketError: (event) => {
-        console.error('WebSocket error:', event);
+        logger.error('WebSocket error:', event);
         setError('Connection error. Retrying...');
       },
 
@@ -136,7 +137,7 @@ export function useChat(matchId: string | null): UseChatReturn {
           RECONNECT_DELAY_BASE * Math.pow(2, reconnectAttemptRef.current),
           MAX_RECONNECT_DELAY
         );
-        console.log(`Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current})`);
+        logger.debug(`Reconnecting in ${delay}ms (attempt ${reconnectAttemptRef.current})`);
       }
     });
 

@@ -1,6 +1,7 @@
 import { useState, useEffect, type FormEvent } from 'react';
 import toast from 'react-hot-toast';
 import { matchService } from '../services/matchService';
+import { logger } from '../utils/logger';
 import type { MatchCompletion } from '../types';
 
 type ModalState = 'input' | 'analyzing' | 'result';
@@ -70,7 +71,7 @@ export function CompleteSprintModal({ isOpen, onClose, matchId, onComplete }: Co
       setResult(completionResult);
       setModalState('result');
     } catch (err) {
-      console.error('Sprint completion error:', err);
+      logger.error('Sprint completion error:', err);
       setModalState('input');
       setError('Failed to complete sprint. Please try again.');
       toast.error('Failed to complete sprint', {
